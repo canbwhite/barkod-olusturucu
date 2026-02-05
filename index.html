@@ -2,86 +2,105 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <title>barkod-olusturucu</title>
+  <title>⚙️ Control.json Editor</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #111;
-      color: #fff;
+      color: #eee;
       padding: 20px;
-    }
-    input, button {
-      padding: 8px;
-      margin: 5px 0;
     }
     .hidden { display: none; }
     .box {
-      border: 1px solid #444;
+      border: 1px solid #333;
       padding: 15px;
-      margin-top: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
     }
     label {
       display: block;
       margin: 5px 0;
+    }
+    button {
+      padding: 10px;
+      margin-top: 10px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
 <h2>🔐 Giriş</h2>
-<input type="password" id="password" placeholder="Şifre">
-<button onclick="login()">Giriş Yap</button>
+<div id="loginBox" class="box">
+  <input type="password" id="password" placeholder="Şifre">
+  <button onclick="login()">Giriş</button>
+</div>
 
-<div id="panel" class="hidden box">
+<div id="panel" class="hidden">
+
   <h2>⚙️ Control.json Editor</h2>
 
-  <label>
-    <input type="checkbox" id="globalEnabled">
-    Global Enabled
-  </label>
+  <div class="box">
+    <label>
+      <input type="checkbox" id="globalEnabled">
+      Global Enabled
+    </label>
+  </div>
 
-  <h3>🤖 Bot Toggle</h3>
-  <div id="users"></div>
+  <div class="box">
+    <h3>🤖 Bot Toggle</h3>
+    <div id="users"></div>
+  </div>
 
-  <h3>🔑 Login Trigger</h3>
-  <div id="tokens"></div>
+  <div class="box">
+    <h3>🔑 Login Trigger</h3>
+    <div id="tokens"></div>
+  </div>
 
   <button onclick="save()">💾 Kaydet</button>
-  <p id="status"></p>
 </div>
 
 <script>
 /* ================== AYARLAR ================== */
+
 const PASSWORD = "29ekim1923"; // panel şifresi
+
 const GITHUB_TOKEN = "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";
+
 const OWNER = "canbwhite";
 const REPO = "barkod-olusturucu";
 const FILE_PATH = "control.json";
-/* ============================================ */
+const BRANCH = "main";
 
-let sha = "";
+/* ============================================= */
+
 let data = {};
+let fileSha = "";
 
+/* ---------- LOGIN ---------- */
 function login() {
-  if (document.getElementById("password").value === PASSWORD) {
-    document.getElementById("panel").classList.remove("hidden");
-    loadJson();
-  } else {
+  const pass = document.getElementById("password").value;
+  if (pass !== PASSWORD) {
     alert("Şifre yanlış");
+    return;
   }
+  document.getElementById("loginBox").classList.add("hidden");
+  document.getElementById("panel").classList.remove("hidden");
+  loadJson();
 }
 
+/* ---------- JSON OKU ---------- */
 async function loadJson() {
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`,
-    {
-      headers: {
-        Authorization: `token ${GITHUB_TOKEN}`
-      }
+  const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`;
+
+  const res = await fetch(apiUrl, {
+    headers: {
+      Authorization: `token ${GITHUB_TOKEN}`
     }
-  );
+  });
+
   const json = await res.json();
-  sha = json.sha;
+  fileSha = json.sha;
   data = JSON.parse(atob(json.content));
 
   document.getElementById("globalEnabled").checked = data.globalEnabled;
@@ -111,18 +130,21 @@ async function loadJson() {
   });
 }
 
+/* ---------- JSON KAYDET ---------- */
 async function save() {
   data.globalEnabled = document.getElementById("globalEnabled").checked;
 
-  Object.keys(data.users).forEach(k => {
-    data.users[k] = document.getElementById(k).checked;
+  Object.keys(data.users).forEach(key => {
+    data.users[key] = document.getElementById(key).checked;
   });
 
-  Object.keys(data.userstkn).forEach(k => {
-    data.userstkn[k] = document.getElementById(k).checked;
+  Object.keys(data.userstkn).forEach(key => {
+    data.userstkn[key] = document.getElementById(key).checked;
   });
 
-  const content = btoa(JSON.stringify(data, null, 2));
+  const content = btoa(
+    unescape(encodeURIComponent(JSON.stringify(data, null, 2)))
+  );
 
   const res = await fetch(
     `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`,
@@ -133,18 +155,19 @@ async function save() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        message: "control.json updated from panel",
-        content,
-        sha
+        message: "control.json güncellendi",
+        content: content,
+        sha: fileSha,
+        branch: BRANCH
       })
     }
   );
 
   if (res.ok) {
-    document.getElementById("status").innerText = "✅ Kaydedildi";
+    alert("Kaydedildi 🎉");
     loadJson();
   } else {
-    document.getElementById("status").innerText = "❌ Hata oluştu";
+    alert("Kaydetme hatası");
   }
 }
 </script>
