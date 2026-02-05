@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8" />
-<title>Control Panel</title>
+<title>Barkod Oluşturucu</title>
 <style>
   body { background:#111; color:#eee; font-family:Arial; padding:20px }
   button { margin:5px; padding:8px 12px }
@@ -12,117 +12,5 @@
 </style>
 </head>
 <body>
-
-<h2>🔐 Giriş</h2>
-<input type="password" id="pw" placeholder="Şifre">
-<button onclick="login()">Giriş</button>
-
-<div id="panel" class="hidden">
-
-  <div class="box">
-    <label>
-      <input type="checkbox" id="globalEnabled">
-      Global Enabled
-    </label>
-  </div>
-
-  <div class="box">
-    <h3>🤖 Users (BUTON)</h3>
-    <div id="users"></div>
-  </div>
-
-  <div class="box">
-    <h3>🔑 User Tokens (TOGGLE)</h3>
-    <div id="tokens"></div>
-  </div>
-
-  <button onclick="save()">💾 Kaydet</button>
-
-</div>
-
-<script>
-/* ================== AYARLAR ================== */
-const PASSWORD = "29ekim1923";
-const OWNER = "canbwhite";
-const REPO = "barkod-olusturucu";
-const FILE = "control.json";
-const TOKEN = "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";
-/* ============================================= */
-
-let fileSha = "";
-let data = {};
-
-function login() {
-  if (document.getElementById("pw").value !== PASSWORD) {
-    alert("Şifre yanlış");
-    return;
-  }
-  document.getElementById("panel").classList.remove("hidden");
-  load();
-}
-
-async function load() {
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE}`,
-    { headers: { Authorization: `token ${TOKEN}` } }
-  );
-
-  const json = await res.json();
-  fileSha = json.sha;
-  data = JSON.parse(atob(json.content));
-
-  document.getElementById("globalEnabled").checked = data.globalEnabled;
-
-  const usersDiv = document.getElementById("users");
-  usersDiv.innerHTML = "";
-
-  Object.keys(data.users).forEach(k => {
-    const btn = document.createElement("button");
-    btn.textContent = `${k}: ${data.users[k] ? "ON" : "OFF"}`;
-    btn.onclick = () => {
-      data.users[k] = !data.users[k];
-      btn.textContent = `${k}: ${data.users[k] ? "ON" : "OFF"}`;
-    };
-    usersDiv.appendChild(btn);
-  });
-
-  const tokensDiv = document.getElementById("tokens");
-  tokensDiv.innerHTML = "";
-
-  Object.keys(data.userstkn).forEach(k => {
-    const label = document.createElement("label");
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.checked = data.userstkn[k];
-    cb.onchange = () => data.userstkn[k] = cb.checked;
-    label.appendChild(cb);
-    label.append(" " + k);
-    tokensDiv.appendChild(label);
-  });
-}
-
-async function save() {
-  data.globalEnabled = document.getElementById("globalEnabled").checked;
-
-  await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `token ${TOKEN}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: "update control.json",
-        sha: fileSha,
-        content: btoa(JSON.stringify(data, null, 2))
-      })
-    }
-  );
-
-  alert("JSON GÜNCELLENDİ");
-}
-</script>
-
 </body>
 </html>
