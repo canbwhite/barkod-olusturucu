@@ -10,7 +10,7 @@
     "user7": false
   },
     "userstkn": {
-    "user1tkn": true,
+    "user1tkn": false,
     "user2tkn": false,
     "user3tkn": false,
     "user4tkn": false,

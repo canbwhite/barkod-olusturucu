@@ -1,44 +1,23 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <title>⚙️ Control.json Editor</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #eee;
-      padding: 20px;
-    }
-    .hidden { display: none; }
-    .box {
-      border: 1px solid #333;
-      padding: 15px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-    }
-    label {
-      display: block;
-      margin: 5px 0;
-    }
-    button {
-      padding: 10px;
-      margin-top: 10px;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Control Panel</title>
+<style>
+  body { background:#111; color:#eee; font-family:Arial; padding:20px }
+  button { margin:5px; padding:8px 12px }
+  .hidden { display:none }
+  .box { border:1px solid #333; padding:15px; margin-top:15px }
+  label { display:block; margin:4px 0 }
+</style>
 </head>
 <body>
 
 <h2>🔐 Giriş</h2>
-<div id="loginBox" class="box">
-  <input type="password" id="password" placeholder="Şifre">
-  <button onclick="login()">Giriş</button>
-</div>
+<input type="password" id="pw" placeholder="Şifre">
+<button onclick="login()">Giriş</button>
 
 <div id="panel" class="hidden">
-
-  <h2>⚙️ Control.json Editor</h2>
 
   <div class="box">
     <label>
@@ -48,149 +27,100 @@
   </div>
 
   <div class="box">
-    <h3>🤖 Bot Toggle</h3>
+    <h3>🤖 Users (BUTON)</h3>
     <div id="users"></div>
   </div>
 
   <div class="box">
-    <h3>🔑 Login Trigger</h3>
+    <h3>🔑 User Tokens (TOGGLE)</h3>
     <div id="tokens"></div>
   </div>
 
   <button onclick="save()">💾 Kaydet</button>
+
 </div>
 
 <script>
 /* ================== AYARLAR ================== */
-
-const PASSWORD = "29ekim1923"; // panel şifresi
-
-const GITHUB_TOKEN = "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";
-
+const PASSWORD = "29ekim1923";
 const OWNER = "canbwhite";
 const REPO = "barkod-olusturucu";
-const FILE_PATH = "control.json";
-const BRANCH = "main";
-
+const FILE = "control.json";
+const TOKEN = "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";
 /* ============================================= */
 
-let data = {};
 let fileSha = "";
+let data = {};
 
-/* ---------- LOGIN ---------- */
 function login() {
-  const pass = document.getElementById("password").value;
-  if (pass !== PASSWORD) {
+  if (document.getElementById("pw").value !== PASSWORD) {
     alert("Şifre yanlış");
     return;
   }
-  document.getElementById("loginBox").classList.add("hidden");
   document.getElementById("panel").classList.remove("hidden");
-  loadJson();
+  load();
 }
 
-/* ---------- JSON OKU ---------- */
-async function loadJson() {
-  try {
-    const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`;
+async function load() {
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE}`,
+    { headers: { Authorization: `token ${TOKEN}` } }
+  );
 
-    const res = await fetch(apiUrl, {
-      headers: {
-        Authorization: `token ${GITHUB_TOKEN}`
-      }
-    });
+  const json = await res.json();
+  fileSha = json.sha;
+  data = JSON.parse(atob(json.content));
 
-    if (!res.ok) {
-      alert("JSON okunamadı: " + res.status);
-      return;
-    }
+  document.getElementById("globalEnabled").checked = data.globalEnabled;
 
-    const json = await res.json();
-    fileSha = json.sha;
-    data = JSON.parse(atob(json.content));
+  const usersDiv = document.getElementById("users");
+  usersDiv.innerHTML = "";
 
-    console.log("JSON OKUNDU:", data);
+  Object.keys(data.users).forEach(k => {
+    const btn = document.createElement("button");
+    btn.textContent = `${k}: ${data.users[k] ? "ON" : "OFF"}`;
+    btn.onclick = () => {
+      data.users[k] = !data.users[k];
+      btn.textContent = `${k}: ${data.users[k] ? "ON" : "OFF"}`;
+    };
+    usersDiv.appendChild(btn);
+  });
 
-    document.getElementById("globalEnabled").checked = !!data.globalEnabled;
+  const tokensDiv = document.getElementById("tokens");
+  tokensDiv.innerHTML = "";
 
-    const usersDiv = document.getElementById("users");
-    const tokensDiv = document.getElementById("tokens");
-
-    usersDiv.innerHTML = "";
-    tokensDiv.innerHTML = "";
-
-    if (!data.users || Object.keys(data.users).length === 0) {
-      usersDiv.innerHTML = "<i>Kullanıcı yok</i>";
-    } else {
-      Object.keys(data.users).forEach(key => {
-        usersDiv.innerHTML += `
-          <label>
-            <input type="checkbox" id="${key}" ${data.users[key] ? "checked" : ""}>
-            ${key}
-          </label>
-        `;
-      });
-    }
-
-    if (!data.userstkn || Object.keys(data.userstkn).length === 0) {
-      tokensDiv.innerHTML = "<i>Login trigger yok</i>";
-    } else {
-      Object.keys(data.userstkn).forEach(key => {
-        tokensDiv.innerHTML += `
-          <label>
-            <input type="checkbox" id="${key}" ${data.userstkn[key] ? "checked" : ""}>
-            ${key}
-          </label>
-        `;
-      });
-    }
-
-  } catch (e) {
-    console.error(e);
-    alert("JSON parse hatası!");
-  }
+  Object.keys(data.userstkn).forEach(k => {
+    const label = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = data.userstkn[k];
+    cb.onchange = () => data.userstkn[k] = cb.checked;
+    label.appendChild(cb);
+    label.append(" " + k);
+    tokensDiv.appendChild(label);
+  });
 }
 
-
-/* ---------- JSON KAYDET ---------- */
 async function save() {
   data.globalEnabled = document.getElementById("globalEnabled").checked;
 
-  Object.keys(data.users).forEach(key => {
-    data.users[key] = document.getElementById(key).checked;
-  });
-
-  Object.keys(data.userstkn).forEach(key => {
-    data.userstkn[key] = document.getElementById(key).checked;
-  });
-
-  const content = btoa(
-    unescape(encodeURIComponent(JSON.stringify(data, null, 2)))
-  );
-
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`,
+  await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE}`,
     {
       method: "PUT",
       headers: {
-        Authorization: `token ${GITHUB_TOKEN}`,
+        Authorization: `token ${TOKEN}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        message: "control.json güncellendi",
-        content: content,
+        message: "update control.json",
         sha: fileSha,
-        branch: BRANCH
+        content: btoa(JSON.stringify(data, null, 2))
       })
     }
   );
 
-  if (res.ok) {
-    alert("Kaydedildi 🎉");
-    loadJson();
-  } else {
-    alert("Kaydetme hatası");
-  }
+  alert("JSON GÜNCELLENDİ");
 }
 </script>
 
