@@ -1,0 +1,21 @@
+{
+  "globalEnabled": true,
+  "users": {
+    "user1": false,
+    "user2": false,
+    "user3": false,
+    "user4": false,
+    "user5": false,
+    "user6": false,
+    "user7": false
+  },
+    "userstkn": {
+    "user1tkn": true,
+    "user2tkn": false,
+    "user3tkn": false,
+    "user4tkn": false,
+    "user5tkn": false,
+    "user6tkn": false,
+    "user7tkn": false
+  }
+}
