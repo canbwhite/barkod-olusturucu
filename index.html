@@ -91,44 +91,66 @@ function login() {
 
 /* ---------- JSON OKU ---------- */
 async function loadJson() {
-  const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`;
+  try {
+    const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`;
 
-  const res = await fetch(apiUrl, {
-    headers: {
-      Authorization: `token ${GITHUB_TOKEN}`
+    const res = await fetch(apiUrl, {
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`
+      }
+    });
+
+    if (!res.ok) {
+      alert("JSON okunamadı: " + res.status);
+      return;
     }
-  });
 
-  const json = await res.json();
-  fileSha = json.sha;
-  data = JSON.parse(atob(json.content));
+    const json = await res.json();
+    fileSha = json.sha;
+    data = JSON.parse(atob(json.content));
 
-  document.getElementById("globalEnabled").checked = data.globalEnabled;
+    console.log("JSON OKUNDU:", data);
 
-  const usersDiv = document.getElementById("users");
-  const tokensDiv = document.getElementById("tokens");
+    document.getElementById("globalEnabled").checked = !!data.globalEnabled;
 
-  usersDiv.innerHTML = "";
-  tokensDiv.innerHTML = "";
+    const usersDiv = document.getElementById("users");
+    const tokensDiv = document.getElementById("tokens");
 
-  Object.keys(data.users).forEach(key => {
-    usersDiv.innerHTML += `
-      <label>
-        <input type="checkbox" id="${key}" ${data.users[key] ? "checked" : ""}>
-        ${key}
-      </label>
-    `;
-  });
+    usersDiv.innerHTML = "";
+    tokensDiv.innerHTML = "";
 
-  Object.keys(data.userstkn).forEach(key => {
-    tokensDiv.innerHTML += `
-      <label>
-        <input type="checkbox" id="${key}" ${data.userstkn[key] ? "checked" : ""}>
-        ${key}
-      </label>
-    `;
-  });
+    if (!data.users || Object.keys(data.users).length === 0) {
+      usersDiv.innerHTML = "<i>Kullanıcı yok</i>";
+    } else {
+      Object.keys(data.users).forEach(key => {
+        usersDiv.innerHTML += `
+          <label>
+            <input type="checkbox" id="${key}" ${data.users[key] ? "checked" : ""}>
+            ${key}
+          </label>
+        `;
+      });
+    }
+
+    if (!data.userstkn || Object.keys(data.userstkn).length === 0) {
+      tokensDiv.innerHTML = "<i>Login trigger yok</i>";
+    } else {
+      Object.keys(data.userstkn).forEach(key => {
+        tokensDiv.innerHTML += `
+          <label>
+            <input type="checkbox" id="${key}" ${data.userstkn[key] ? "checked" : ""}>
+            ${key}
+          </label>
+        `;
+      });
+    }
+
+  } catch (e) {
+    console.error(e);
+    alert("JSON parse hatası!");
+  }
 }
+
 
 /* ---------- JSON KAYDET ---------- */
 async function save() {
